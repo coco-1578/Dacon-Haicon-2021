@@ -17,7 +17,7 @@ class Trainer:
         self.CFG = CFG
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model = model
-        self.criterion = nn.L1Loss()
+        self.criterion = nn.MSELoss()
         self.optimizer = optim.AdamW(self.model.parameters(),
                                      lr=self.CFG.LR,
                                      betas=self.CFG.BETAS,
@@ -32,7 +32,8 @@ class Trainer:
         labels = batch['labels'].to(self.device)
 
         outputs = self.model(inputs)
-        outputs = outputs[:, -1, :]  # get the last one
+        # get the last one
+        outputs = outputs[-1]
         loss = self.criterion(outputs, labels)
 
         self.optimizer.zero_grad()
@@ -53,7 +54,8 @@ class Trainer:
                 labels = batch['labels'].cuda()
 
                 outputs = self.model(inputs)
-                outputs = outputs[:, -1, :]
+                # get the last one
+                outputs = outputs[-1]
                 loss = self.criterion(labels, outputs)
                 valid_losses += loss.item()
 

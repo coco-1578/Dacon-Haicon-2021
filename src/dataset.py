@@ -1,13 +1,17 @@
-import dateutil
+import os
+import glob
 
 from datetime import timedelta
+from dateutil.parser import parse
+from sklearn import preprocessing
+from torch.utils import data
 
 import tqdm
 import torch
 import numpy as np
 import pandas as pd
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, dataset
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -19,15 +23,17 @@ def dataframe_from_csvs(targets):
     return pd.concat([dataframe_from_csv(x) for x in targets])
 
 
-def normalize_dataset(train_dataset, valid_dataset, test_dataset):
+def normalize_datasets(datasets):
 
-    columns = train_dataset.columns.drop(["time"])
+    train_datasets, valid_datasets, test_datasets = datasets
+
+    columns = train_datasets.columns.drop(["time"])
     scaler = MinMaxScaler()
-    train_dataset[columns] = scaler.fit_transform(train_dataset[columns])
-    valid_dataset[columns] = scaler.transform(valid_dataset[columns])
-    test_dataset[columns] = scaler.transform(test_dataset[columns])
+    train_datasets[columns] = scaler.fit_transform(train_datasets[columns])
+    valid_datasets[columns] = scaler.transform(valid_datasets[columns])
+    test_datasets[columns] = scaler.transform(test_datasets[columns])
 
-    return train_dataset, valid_dataset, test_dataset, columns
+    return train_datasets, valid_datasets, test_datasets, columns
 
 
 def boundary_check(dataset):
@@ -35,37 +41,53 @@ def boundary_check(dataset):
     return np.any(x > 1.0), np.any(x < 0), np.any(np.isnan(x))
 
 
-class LSTMDataset(Dataset):
+def load_datasets(directory):
 
-    def __init__(self, timestamps, dataset, stride=1, window_size=90, attacks=None):
+    train_datasets_path = sorted(glob.glob(os.path.join(directory, 'train')))
+    valid_datasets_path = sorted(glob.glob(os.path.join(directory, 'valid')))
+    test_datasets_path = sorted(glob.glob(os.path.join(directory, 'test')))
+
+    train_datasets = dataframe_from_csvs(train_datasets_path)
+    valid_datasets = dataframe_from_csvs(valid_datasets_path)
+    test_datasets = dataframe_from_csvs(test_datasets_path)
+
+    train_datasets, valid_datasets, test_datasets, columns = normalize_datasets(
+        [train_datasets, valid_datasets, test_datasets])
+    return train_datasets, valid_datasets, test_datasets, columns
+
+
+class BaseLineDataset(Dataset):
+
+    def __init__(self, timestamps, data_frame, window_size, stride=1, attacks=None):
 
         self.timestamps = np.array(timestamps)
-        self.dataset = np.array(dataset, dtype=np.float32)
-        self.valid_idxs = list()
+        self.data_frame = np.array(data_frame, dtype=np.float32)
+        self.valid_indices = list()
         self.window_size = window_size
 
-        for L in tqdm.tqdm(range(len(self.timestamps) - window_size + 1)):
-            R = L + window_size - 1
-            if dateutil.parser.parse(self.timestamps[R]) - dateutil.parser.parse(
-                    self.timestamps[L]) == timedelta(seconds=window_size - 1):
-                self.valid_idxs.append(L)
-        self.valid_idxs = np.array(self.valid_idxs, dtype=np.int32)[::stride]
-        self.n_idxs = len(self.valid_idxs)
-        print(f"# of valid windows: {self.n_idxs}")
+        for left_window in tqdm.tqdm(range(len(self.timestamps) - self.window_size + 1)):
+            right_window = left_window + self.window_size - 1
+            if parse(self.timestamps[right_window]) - parse(self.timestamps[left_window]) == timedelta(
+                    seconds=self.window_size - 1):
+                self.valid_indices.append(left_window)
+
+        self.valid_indices = np.array(self.valid_indices, dtype=np.int32)[::stride]
+        self.num_indices = len(self.valid_indices)
         if attacks is not None:
             self.attacks = np.array(attacks, dtype=np.float32)
-            self.with_attack = True
+            self.is_attacked = True
         else:
-            self.with_attack = False
+            self.is_attacked = False
 
     def __len__(self):
-        return self.n_idxs
+        return self.num_indices
 
-    def __getitem__(self, idx):
-        i = self.valid_idxs[idx]
-        last = i + self.window_size - 1
-        item = {"attack": self.attacks[last] if self.with_attack else {}}
-        item["timestamp"] = self.timestamps[last]
-        item["inputs"] = torch.from_numpy(self.dataset[i:i + self.window_size - 1])
-        item["labels"] = torch.from_numpy(self.dataset[last])
+    def __getitem__(self, index):
+        index = self.valid_indices[index]
+        last_index = index + self.window_size - 1
+        item = {"attack": self.attacks[last_index]} if self.is_attacked else {}
+        item["timestamp"] = self.timestamps[index + self.window_size - 1]
+        item["input"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
+        item["label"] = torch.from_numpy(self.data_frame[last_index])
+
         return item
