@@ -33,7 +33,7 @@ def normalize_datasets(datasets):
     valid_datasets[columns] = scaler.transform(valid_datasets[columns])
     test_datasets[columns] = scaler.transform(test_datasets[columns])
 
-    return train_datasets, valid_datasets, test_datasets, columns
+    return train_datasets, valid_datasets, test_datasets, columns, scaler
 
 
 def boundary_check(dataset):

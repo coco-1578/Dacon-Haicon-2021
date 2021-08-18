@@ -1,10 +1,13 @@
 import argparse
 
+import torch.nn as nn
+import torch.optim as optim
+
 from config import CFG
 from utils import fix_seed
 from trainer import Trainer
-from model import BaseLine2020
-from dataset import load_datasets
+from model import BaseLine
+from dataset import load_datasets, BaseLineDataset
 
 
 def parse_args():
@@ -21,12 +24,31 @@ def main():
 
     args = parse_args()
 
-    train_datasets, valid_datasets, test_datasets, columns = load_datasets(args.directory)
+    train_dataframe, valid_dataframe, test_dataframe, columns = load_datasets(args.directory)
 
-    model = BaseLine2020(n_features=train_datasets.shape[1],
-                         hidden_size=CFG.HIDDEN_SIZE,
-                         num_layers=CFG.NUM_LAYERS,
-                         bidirectional=CFG.BIDIRECTIONAL,
-                         dropout=CFG.DROPOUT,
-                         reversed=CFG.REVERSED)
-    trainer = Trainer(CFG, model)
+    model = BaseLine(n_features=train_dataframe.shape[1],
+                     hidden_size=CFG.HIDDEN_SIZE,
+                     num_layers=CFG.NUM_LAYERS,
+                     bidirectional=CFG.BIDIRECTIONAL,
+                     dropout=CFG.DROPOUT)
+
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(model.parameters(), lr=CFG.LR, betas=CFG.BETAS, weight_decay=CFG.DECAY)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG.MAX_EPOCHS, eta_min=1e-5)
+    trainer = Trainer(CFG, model, criterion, optimizer, scheduler)
+    train_datasets = BaseLineDataset(train_dataframe['timestamp'],
+                                     train_dataframe[columns],
+                                     CFG.WINDOW_SIZE,
+                                     stride=1,
+                                     attacks=None)
+    valid_datasets = BaseLineDataset(valid_dataframe['timestamp'],
+                                     valid_dataframe[columns],
+                                     CFG.WINDOW_SIZE,
+                                     stride=1,
+                                     attacks=valid_dataframe['attack'])
+    test_datasets = BaseLineDataset(test_dataframe['timestamp'],
+                                    test_dataframe[columns],
+                                    CFG.WINDOW_SIZE,
+                                    stride=1,
+                                    attacks=None)
+    trainer.fit(train_datasets, valid_datasets)

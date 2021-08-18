@@ -12,17 +12,19 @@ from TaPR_pkg import etapr
 
 class Trainer:
 
-    def __init__(self, CFG, model):
+    def __init__(self, CFG, model, criterion, optimizer, scheduler):
 
         self.CFG = CFG
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         self.model = model
-        self.criterion = nn.MSELoss()
-        self.optimizer = optim.AdamW(self.model.parameters(),
-                                     lr=self.CFG.LR,
-                                     betas=self.CFG.BETAS,
-                                     weight_decay=self.CFG.DECAY)
-        # self.scheduler = optim.lr_scheduler.CosineAnnealingLR()
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+
+        if self.CFG.SWA:
+            self.swa_model = torch.optim.swa_utils.AveragedModel(self.model)
+            self.swa_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.CFG.MAX_EPOCHS)
+            self.swa_start = self.CFG.MAX_EPOCHS // 2
 
     def _train_on_batch(self, batch):
 
@@ -65,12 +67,13 @@ class Trainer:
                     attacks.append(np.array(batch["attack"]))
                 except:
                     attacks.append(np.zeros(self.CFG.BATCH_SIZE))
+
         return np.concatenate(timestamp), np.concatenate(distance), np.concatenate(attacks), valid_losses
 
-    def run(self, train_dataset, valid_dataset, columns):
+    def fit(self, train_dataset, valid_dataset):
 
-        train_loader = DataLoader(train_dataset[columns])
-        valid_loader = DataLoader(valid_dataset[columns])
+        train_loader = DataLoader(train_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=True, num_workers=4)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=False, num_workers=4)
 
         loss_history = {"train_loss": [], "valid_loss": []}
 
@@ -82,20 +85,41 @@ class Trainer:
                 train_loss = self._train_on_batch(batch)
                 train_losses += train_loss
 
-            # validation process
-            timestamp, distance, attacks, valid_losses = self._valid_on_epoch(valid_loader)
-            anomaly_score = np.mean(distance, axis=1)
+            loss_history["train_loss"].append(train_losses)
+            description = f"Epoch: [{epoch+1}] - Train Loss: [{train_losses:.4f}]"
+            progress_bar.set_description(description)
 
-            labels = put_labels(anomaly_score)
-            attack_labels = put_labels(np.array(valid_dataset["attack"]), 0.5)
-            final_labels = fill_blank(timestamp, labels, np.array(valid_dataset["time"]))
+        # TODO: save best train model and load best weight
+        save_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
+        state_dict = load_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
+        self.model.load_state_dict(state_dict)
+        self.model = self.model.to(self.device)
 
-            assert attack_labels.shape[0] == final_labels.shape[0], "Length of the list should be same"
-            tapr = etapr.evaluate_haicon(anomalies=attack_labels, predictions=final_labels)
+        # validation process
+        timestamp, distance, attacks, valid_losses = self._valid_on_epoch(valid_loader)
+        anomaly_score = np.mean(distance, axis=1)
 
-            loss_history['train_loss'].append(train_losses)
-            loss_history['valid_loss'].append(valid_losses)
+        labels = put_labels(anomaly_score)
+        attack_labels = put_labels(np.array(valid_dataset["attack"]), 0.5)
+        final_labels = fill_blank(timestamp, labels, np.array(valid_dataset["time"]))
 
-            print(f"F1: {tapr['f1']:.3f} (TaP: {tapr['TaP']:.3f}, TaR: {tapr['TaR']:.3f})")
-            print(f"# of detected anomalies: {len(tapr['Detected_Anomalies'])}")
-            print(f"Detected anomalies: {tapr['Detected_Anomalies']}")
+        assert attack_labels.shape[0] == final_labels.shape[0], "Length of the list should be same"
+        tapr = etapr.evaluate_haicon(anomalies=attack_labels, predictions=final_labels)
+
+        loss_history['valid_loss'].append(valid_losses)
+        print(f"Valid Loss: [{valid_losses:.4f}]")
+
+        print(f"F1: {tapr['f1']:.3f} (TaP: {tapr['TaP']:.3f}, TaR: {tapr['TaR']:.3f})")
+        print(f"# of detected anomalies: {len(tapr['Detected_Anomalies'])}")
+        print(f"Detected anomalies: {tapr['Detected_Anomalies']}")
+
+    def predict(self, test_dataset):
+
+        test_loader = DataLoader(test_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=False, num_workers=4)
+
+        # load best weight
+        state_dict = load_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
+        self.model.load_state_dict(state_dict)
+        self.model = self.model.to(self.device)
+
+        pass

@@ -52,3 +52,17 @@ def fix_seed(seed=5252):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
+
+
+def save_weight(path, state_dict):
+
+    with open(path, "wb") as fd:
+        torch.save(state_dict, fd)
+
+
+def load_weight(path):
+
+    with open(path, "rb") as fd:
+        state_dict = torch.load(fd, map_location="cpu")
+
+    return state_dict
