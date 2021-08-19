@@ -51,4 +51,14 @@ def main():
                                     CFG.WINDOW_SIZE,
                                     stride=1,
                                     attacks=None)
+
+    # train & validation
     trainer.fit(train_datasets, valid_datasets)
+
+    # test
+    trainer.predict(test_datasets)
+
+
+if __name__ == '__main__':
+
+    main()

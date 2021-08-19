@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import pandas as pd
 
 from torch.utils.data import DataLoader
 
@@ -70,6 +71,28 @@ class Trainer:
 
         return np.concatenate(timestamp), np.concatenate(distance), np.concatenate(attacks), valid_losses
 
+    def _predict(self, test_loader):
+
+        timestamp, distance, attacks = [], [], []
+        self.model.eval()
+        with torch.no_grad():
+            for batch in test_loader:
+
+                inputs = batch['inputs'].to(self.device)
+                labels = batch['labels'].to(self.device)
+
+                outputs = self.model(inputs)
+                outputs = outputs[-1]
+
+                timestamp.append(np.array(batch['timestamp']))
+                distance.append(torch.abs(labels - outputs).cpu().numpy())
+                try:
+                    attacks.append(np.array(batch['attack']))
+                except:
+                    attacks.append(np.zeros(self.CFG.BATCH_SIZE))
+
+        return np.concatenate(timestamp), np.concatenate(distance), np.concatenate(attacks)
+
     def fit(self, train_dataset, valid_dataset):
 
         train_loader = DataLoader(train_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=True, num_workers=4)
@@ -122,4 +145,14 @@ class Trainer:
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
 
-        pass
+        timestamps, distance, attacks = self._predict(test_loader)
+        anomaly_score = np.mean(distance, axis=1)
+
+        labels = put_labels(anomaly_score)
+
+        submission = pd.read_csv('sample_submission.csv')
+        submission.index = submission['timestamp']
+        submission.loc[timestamps, 'attack'] = labels
+
+        submission.to_csv(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}_submission.csv",
+                          index=False)
