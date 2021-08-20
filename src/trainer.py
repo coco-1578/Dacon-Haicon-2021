@@ -136,6 +136,11 @@ class Trainer:
         print(f"# of detected anomalies: {len(tapr['Detected_Anomalies'])}")
         print(f"Detected anomalies: {tapr['Detected_Anomalies']}")
 
+        check_graph(anomaly_score,
+                    attacks,
+                    threshold=0.04,
+                    path=f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.png")
+
     def predict(self, test_dataset):
 
         test_loader = DataLoader(test_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=False, num_workers=4)

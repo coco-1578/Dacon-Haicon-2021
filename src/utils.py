@@ -3,6 +3,7 @@ import dateutil
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def put_labels(distance, threshold):
@@ -66,3 +67,22 @@ def load_weight(path):
         state_dict = torch.load(fd, map_location="cpu")
 
     return state_dict
+
+
+def check_graph(xs, att, piece=2, threshold=None, path=None):
+
+    l = xs.shape[0]
+    chunk = l // piece
+    fig, axs = plt.subplots(piece, figsize=(20, 4 * piece))
+    for i in range(piece):
+        L = i * chunk
+        R = min(L + chunk, l)
+        xticks = range(L, R)
+        axs[i].plot(xticks, xs[L:R])
+        if len(xs[L:R]) > 0:
+            peak = max(xs[L:R])
+            axs[i].plot(xticks, att[L:R] * peak * 0.3)
+        if threshold is not None:
+            axs[i].axhline(y=threshold, color='r')
+
+    plt.savefig(path)
