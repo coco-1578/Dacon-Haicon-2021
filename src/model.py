@@ -26,3 +26,20 @@ class BaseLine(nn.Module):
         # skip connection with the x0
         out = x[0] + out
         return out
+
+
+class TransformerModel(nn.Module):
+
+    def __init__(self, ntoken, ninp, nhead, nhid, nlayers, dropout=0.2):
+        super(TransformerModel, self).__init__()
+        encoder_layers = nn.TransformerEncoderLayer(ninp, nhead, nhid, dropout)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layers, nlayers)
+        self.decoder = nn.Linear(ninp, ntoken)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+
+        x = x.transpose(0, 1)  # (batch, seq, features) -> (seq, batch, features)
+        output = self.transformer_encoder(x, None)
+        output = self.decoder(self.relu(output))
+        return x[0] + output[-1]  # skip connection
