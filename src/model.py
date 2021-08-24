@@ -45,7 +45,7 @@ class TransformerModel(nn.Module):
         return x[0] + output[-1]  # skip connection
 
 
-class LSTMEncoder(nn.Moudle):
+class LSTMEncoder(nn.Module):
 
     def __init__(self, n_features, hidden_size, num_layers=2, bidirectional=True, dropout=0):
         super(LSTMEncoder, self).__init__()
@@ -68,7 +68,7 @@ class LSTMDecoder(nn.Module):
     def __init__(self, window_size, n_features, hidden_size, num_layers=2, bidirectional=True, dropout=0):
         super(LSTMDecoder, self).__init__()
         self.window_size = window_size
-        self.lstm = nn.LSTM(input_size=hidden_size * 2,
+        self.lstm = nn.LSTM(input_size=n_features,
                             hidden_size=hidden_size,
                             num_layers=num_layers,
                             bidirectional=bidirectional,
@@ -97,3 +97,13 @@ class LSTMAE(nn.Module):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
+
+
+if __name__ == '__main__':
+
+    window_size = 60
+    n_features = 86
+    hidden_size = 128
+
+    model = LSTMAE(window_size, n_features, hidden_size)
+    print(model)
