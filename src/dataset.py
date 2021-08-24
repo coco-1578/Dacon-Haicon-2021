@@ -27,7 +27,7 @@ def normalize_datasets(datasets):
 
     train_datasets, valid_datasets, test_datasets = datasets
 
-    columns = train_datasets.columns.drop(["time"])
+    columns = train_datasets.columns.drop(["timestamp"])
     scaler = MinMaxScaler()
     train_datasets[columns] = scaler.fit_transform(train_datasets[columns])
     valid_datasets[columns] = scaler.transform(valid_datasets[columns])
@@ -43,9 +43,9 @@ def boundary_check(dataset):
 
 def load_datasets(directory):
 
-    train_datasets_path = sorted(glob.glob(os.path.join(directory, 'train')))
-    valid_datasets_path = sorted(glob.glob(os.path.join(directory, 'valid')))
-    test_datasets_path = sorted(glob.glob(os.path.join(directory, 'test')))
+    train_datasets_path = sorted(glob.glob(os.path.join(directory, 'train/*.csv')))
+    valid_datasets_path = sorted(glob.glob(os.path.join(directory, 'validation/*.csv')))
+    test_datasets_path = sorted(glob.glob(os.path.join(directory, 'test/*.csv')))
 
     train_datasets = dataframe_from_csvs(train_datasets_path)
     valid_datasets = dataframe_from_csvs(valid_datasets_path)
