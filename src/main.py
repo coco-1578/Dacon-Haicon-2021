@@ -6,7 +6,7 @@ import torch.optim as optim
 from config import CFG
 from utils import fix_seed
 from trainer import Trainer
-from model import BaseLine
+from model import *
 from dataset import load_datasets, BaseLineDataset
 
 
@@ -26,11 +26,14 @@ def main():
 
     train_dataframe, valid_dataframe, test_dataframe, columns = load_datasets(args.directory)
 
-    model = BaseLine(n_features=train_dataframe.shape[1],
-                     hidden_size=CFG.HIDDEN_SIZE,
-                     num_layers=CFG.NUM_LAYERS,
-                     bidirectional=CFG.BIDIRECTIONAL,
-                     dropout=CFG.DROPOUT)
+    # model = BaseLine(n_features=train_dataframe.shape[1],
+    #                  hidden_size=CFG.HIDDEN_SIZE,
+    #                  num_layers=CFG.NUM_LAYERS,
+    #                  bidirectional=CFG.BIDIRECTIONAL,
+    #                  dropout=CFG.DROPOUT)
+
+    model = LSTMAE(CFG.WINDOW_SIZE, train_dataframe.shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
+                   CFG.DROPOUT)
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=CFG.LR, betas=CFG.BETAS, weight_decay=CFG.DECAY)

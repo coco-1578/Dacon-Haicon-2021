@@ -9,10 +9,10 @@ class CFG:
     WINDOW_SIZE = 60
 
     # GRU & LSTM
-    NUM_LAYERS = 3
+    NUM_LAYERS = 2
     HIDDEN_SIZE = 128
     BIDIRECTIONAL = True
-    DROPOUT = 0.1
+    DROPOUT = 0
     # STEPS = 1000
 
     # PYTORCH
