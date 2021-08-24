@@ -100,7 +100,7 @@ class Trainer:
 
         loss_history = {"train_loss": [], "valid_loss": []}
 
-        for epoch in tqdm.tqdm(range(self.CFG.MAX_EPOCH)):
+        for epoch in tqdm.tqdm(range(self.CFG.MAX_EPOCHS)):
             train_losses = 0
             progress_bar = tqdm.tqdm(enumerate(train_loader), total=len(train_loader), position=0, leave=True)
             for index, batch in progress_bar:

@@ -51,9 +51,9 @@ def load_datasets(directory):
     valid_datasets = dataframe_from_csvs(valid_datasets_path)
     test_datasets = dataframe_from_csvs(test_datasets_path)
 
-    train_datasets, valid_datasets, test_datasets, columns = normalize_datasets(
+    train_datasets, valid_datasets, test_datasets, columns, scaler = normalize_datasets(
         [train_datasets, valid_datasets, test_datasets])
-    return train_datasets, valid_datasets, test_datasets, columns
+    return train_datasets, valid_datasets, test_datasets, columns, scaler
 
 
 class BaseLineDataset(Dataset):
@@ -87,7 +87,7 @@ class BaseLineDataset(Dataset):
         last_index = index + self.window_size - 1
         item = {"attack": self.attacks[last_index]} if self.is_attacked else {}
         item["timestamp"] = self.timestamps[index + self.window_size - 1]
-        item["input"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
-        item["label"] = torch.from_numpy(self.data_frame[last_index])
+        item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
+        item["labels"] = torch.from_numpy(self.data_frame[last_index])
 
         return item

@@ -24,7 +24,7 @@ def main():
 
     args = parse_args()
 
-    train_dataframe, valid_dataframe, test_dataframe, columns = load_datasets(args.directory)
+    train_dataframe, valid_dataframe, test_dataframe, columns, scaler = load_datasets(args.directory)
 
     # model = BaseLine(n_features=train_dataframe.shape[1],
     #                  hidden_size=CFG.HIDDEN_SIZE,
