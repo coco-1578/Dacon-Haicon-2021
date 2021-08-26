@@ -27,6 +27,9 @@ class Trainer:
             self.swa_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.CFG.MAX_EPOCHS)
             self.swa_start = self.CFG.MAX_EPOCHS // 2
 
+        self.model = self.model.to(self.device)
+        self.swa_model = self.swa_model.to(self.device)
+
     def _train_on_batch(self, batch):
 
         self.model.train()
@@ -53,12 +56,12 @@ class Trainer:
         with torch.no_grad():
             for batch in valid_loader:
 
-                inputs = batch['inputs'].cuda()
-                labels = batch['labels'].cuda()
+                inputs = batch['inputs'].to(self.device)
+                labels = batch['labels'].to(self.device)
 
-                outputs = self.model(inputs)
+                outputs = self.swa_model(inputs)
                 # get the last one
-                outputs = outputs[-1]
+                # outputs = outputs[-1]
                 loss = self.criterion(labels, outputs)
                 valid_losses += loss.item()
 
@@ -81,8 +84,8 @@ class Trainer:
                 inputs = batch['inputs'].to(self.device)
                 labels = batch['labels'].to(self.device)
 
-                outputs = self.model(inputs)
-                outputs = outputs[-1]
+                outputs = self.swa_model(inputs)
+                # outputs = outputs[-1]
 
                 timestamp.append(np.array(batch['timestamp']))
                 distance.append(torch.abs(labels - outputs).cpu().numpy())
@@ -99,6 +102,7 @@ class Trainer:
         valid_loader = DataLoader(valid_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=False, num_workers=4)
 
         loss_history = {"train_loss": [], "valid_loss": []}
+        best = {"loss": np.inf}
 
         for epoch in tqdm.tqdm(range(self.CFG.MAX_EPOCHS)):
             train_losses = 0
@@ -108,15 +112,25 @@ class Trainer:
                 train_loss = self._train_on_batch(batch)
                 train_losses += train_loss
 
+            ### just for test SWA
+            self.swa_model.update_parameters(self.model)
+            self.swa_scheduler.step()
+
+            if train_losses < best["loss"]:
+                best["loss"] = train_losses
+                best["swa_state"] = self.swa_model.state_dict()
+                best["state"] = self.model.state_dict()
+
             loss_history["train_loss"].append(train_losses)
             description = f"Epoch: [{epoch+1}] - Train Loss: [{train_losses:.4f}]"
             progress_bar.set_description(description)
 
         # TODO: save best train model and load best weight
-        save_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
+        save_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth",
+                    best["swa_state"])
         state_dict = load_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
-        self.model.load_state_dict(state_dict)
-        self.model = self.model.to(self.device)
+        self.swa_model.load_state_dict(state_dict)
+        self.swa_model = self.swa_model.to(self.device)
 
         # validation process
         timestamp, distance, attacks, valid_losses = self._valid_on_epoch(valid_loader)
@@ -147,8 +161,8 @@ class Trainer:
 
         # load best weight
         state_dict = load_weight(f"result/{self.CFG.WINDOW_SIZE}_{self.CFG.NUM_LAYERS}_{self.CFG.HIDDEN_SIZE}.pth")
-        self.model.load_state_dict(state_dict)
-        self.model = self.model.to(self.device)
+        self.swa_model.load_state_dict(state_dict)
+        self.swa_model = self.swa_model.to(self.device)
 
         timestamps, distance, attacks = self._predict(test_loader)
         anomaly_score = np.mean(distance, axis=1)

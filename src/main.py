@@ -24,7 +24,9 @@ def main():
 
     args = parse_args()
 
-    train_dataframe, valid_dataframe, test_dataframe, columns, scaler = load_datasets(args.directory)
+    # train_dataframe, valid_dataframe, test_dataframe, columns, scaler = load_datasets(args.directory)
+    train_dataframe, valid_dataframe, test_dataframe, columns, scaler = load_datasets(
+        r'C:/Users/coco/Projects/HAICON2021')
 
     # model = BaseLine(n_features=train_dataframe.shape[1],
     #                  hidden_size=CFG.HIDDEN_SIZE,
@@ -32,8 +34,11 @@ def main():
     #                  bidirectional=CFG.BIDIRECTIONAL,
     #                  dropout=CFG.DROPOUT)
 
-    model = LSTMAE(CFG.WINDOW_SIZE, train_dataframe.shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
-                   CFG.DROPOUT)
+    # model = LSTMAE(CFG.WINDOW_SIZE, train_dataframe[columns].shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
+    #                CFG.DROPOUT)
+
+    model = GRUAE(CFG.WINDOW_SIZE, train_dataframe[columns].shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS,
+                  CFG.BIDIRECTIONAL, CFG.DROPOUT)
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=CFG.LR, betas=CFG.BETAS, weight_decay=CFG.DECAY)

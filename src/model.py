@@ -99,6 +99,72 @@ class LSTMAE(nn.Module):
         return x
 
 
+class GRUEncoder(nn.Module):
+
+    def __init__(self, n_features, hidden_size, num_layers=1, bidirectional=True, dropout=0):
+
+        super(GRUEncoder, self).__init__()
+        self.gru_1 = nn.GRU(input_size=n_features,
+                            hidden_size=hidden_size,
+                            num_layers=num_layers,
+                            bidirectional=bidirectional,
+                            dropout=dropout)
+        self.gru_2 = nn.GRU(input_size=2 * hidden_size,
+                            hidden_size=4 * hidden_size,
+                            num_layers=num_layers,
+                            bidirectional=False,
+                            dropout=dropout)
+
+    def forward(self, x):
+
+        x = x.transpose(0, 1)  # (batch, seq, features) -> (seq, batch, features)
+        x, _ = self.gru_1(x)
+        x, h = self.gru_2(x)
+        return x[-1]
+
+
+class GRUDecoder(nn.Module):
+
+    def __init__(self, window_size, n_features, hidden_size, num_layers=1, bidirectional=True, dropout=0):
+
+        super(GRUDecoder, self).__init__()
+        self.window_size = window_size
+        self.gru_1 = nn.GRU(input_size=n_features,
+                            hidden_size=hidden_size,
+                            num_layers=num_layers,
+                            bidirectional=False,
+                            dropout=dropout)
+        self.gru_2 = nn.GRU(input_size=hidden_size,
+                            hidden_size=hidden_size,
+                            num_layers=num_layers,
+                            bidirectional=bidirectional,
+                            dropout=dropout)
+        self.fc_1 = nn.Linear(in_features=2 * hidden_size, out_features=n_features, bias=True)
+        self.relu_1 = nn.ReLU()
+
+    def forward(self, x):
+
+        x = x.repeat(self.window_size, 1, 1)
+        x, _ = self.gru_1(x)
+        x, _ = self.gru_2(x)
+        return self.relu_1(self.fc_1(x))
+
+
+class GRUAE(nn.Module):
+
+    def __init__(self, window_size, n_features, hidden_size, num_layers=1, bidirectional=True, dropout=0):
+
+        super(GRUAE, self).__init__()
+        self.encoder = GRUEncoder(n_features, hidden_size, n_features, bidirectional, dropout)
+        self.decoder = GRUDecoder(window_size, n_features, hidden_size, n_features, bidirectional, dropout)
+
+    def forward(self, x):
+
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
+
+
 if __name__ == '__main__':
 
     window_size = 60
