@@ -53,6 +53,7 @@ def load_datasets(directory):
 
     train_datasets, valid_datasets, test_datasets, columns, scaler = normalize_datasets(
         [train_datasets, valid_datasets, test_datasets])
+
     return train_datasets, valid_datasets, test_datasets, columns, scaler
 
 

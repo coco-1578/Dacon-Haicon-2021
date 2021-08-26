@@ -86,3 +86,40 @@ def check_graph(xs, att, piece=2, threshold=None, path=None):
             axs[i].axhline(y=threshold, color='r')
 
     plt.savefig(path)
+
+
+class EarlyStopping:
+
+    def __init__(self, patience=5, delta=0):
+
+        self.patience = patience
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.delta = delta
+
+    def __call__(self, val_loss):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.counter = 0
+
+
+# 2020 HACION
+def Cross_put_labels(Inverse1, Inverse2, Inverse3, Inverse4, Inverse5, Inverse6, Inverse7, Inverse8, Inverse9):
+    xs = np.zeros_like(Inverse1)
+    for i in range(Inverse1.shape[0]):
+        if Inverse1[i] + Inverse2[i] + Inverse3[i] + Inverse4[i] + Inverse5[i] + Inverse6[i] + Inverse7[i] + Inverse8[
+                i] + Inverse9[i] > 0:
+            xs[i] = 1
+        else:
+            xs[i] = 0
+    return xs
