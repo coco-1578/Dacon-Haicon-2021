@@ -59,12 +59,13 @@ def load_datasets(directory):
 
 class BaseLineDataset(Dataset):
 
-    def __init__(self, timestamps, data_frame, window_size, stride=1, attacks=None):
+    def __init__(self, timestamps, data_frame, window_size, stride=1, attacks=None, is_autoencoder=False):
 
         self.timestamps = np.array(timestamps)
         self.data_frame = np.array(data_frame, dtype=np.float32)
         self.valid_indices = list()
         self.window_size = window_size
+        self.is_autoencoder = is_autoencoder
 
         for left_window in tqdm.tqdm(range(len(self.timestamps) - self.window_size + 1)):
             right_window = left_window + self.window_size - 1
@@ -88,9 +89,11 @@ class BaseLineDataset(Dataset):
         last_index = index + self.window_size - 1
         item = {"attack": self.attacks[last_index]} if self.is_attacked else {}
         item["timestamp"] = self.timestamps[index + self.window_size - 1]
-        # item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
-        # item["labels"] = torch.from_numpy(self.data_frame[last_index])
-        item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
-        item["labels"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
+        if not self.is_autoencoder:
+            item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
+            item["labels"] = torch.from_numpy(self.data_frame[last_index])
+        else:
+            item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
+            item["labels"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
 
         return item
