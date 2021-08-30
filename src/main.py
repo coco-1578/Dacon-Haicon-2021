@@ -45,13 +45,13 @@ def main():
                                         stride=1,
                                         attacks=None)
 
-        model = BaseLine(train_dataframe[columns].shape, CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
+        model = BaseLine(train_dataframe[columns].shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
                          CFG.DROPOUT)
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=CFG.LR, betas=CFG.BETAS, weight_decay=CFG.DECAY)
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG.MAX_EPOCHS, eta_min=1e-5)
+        optimizer = optim.AdamW(model.parameters())
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG.MAX_EPOCHS)
         trainer = Trainer(CFG, model, criterion, optimizer, scheduler, window_size)
-        trainer.fit(train_datasets, valid_datasets)
+        trainer.fit(train_datasets, valid_datasets, valid_dataframe)
         trainer.predict(test_datasets)
 
 

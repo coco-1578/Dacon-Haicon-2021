@@ -21,7 +21,7 @@ class BaseLine(nn.Module):
         outs, _ = self.gru(x)
 
         # pick the last output (x_t)
-        out = self.fc(outs[-1])
+        out = self.fc(self.relu(outs[-1]))
 
         # skip connection with the x0
         out = x[0] + out
