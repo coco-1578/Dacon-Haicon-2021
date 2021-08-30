@@ -58,7 +58,7 @@ class Trainer:
 
         return np.concatenate(timestamp), np.concatenate(distance), np.concatenate(attacks)
 
-    def fit(self, train_dataset, valid_dataset, valid_dataframe)jj:
+    def fit(self, train_dataset, valid_dataset, valid_dataframe):
 
         train_loader = DataLoader(train_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=True, num_workers=4)
         valid_loader = DataLoader(valid_dataset, batch_size=self.CFG.BATCH_SIZE, shuffle=False, num_workers=4)
