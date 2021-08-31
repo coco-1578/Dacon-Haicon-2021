@@ -48,7 +48,7 @@ def main():
         model = BaseLine(train_dataframe[columns].shape[1], CFG.HIDDEN_SIZE, CFG.NUM_LAYERS, CFG.BIDIRECTIONAL,
                          CFG.DROPOUT)
         criterion = nn.MSELoss()
-        optimizer = optim.AdamW(model.parameters())
+        optimizer = optim.Adam(model.parameters())
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=CFG.MAX_EPOCHS)
         trainer = Trainer(CFG, model, criterion, optimizer, scheduler, window_size)
         trainer.fit(train_datasets, valid_datasets, valid_dataframe)

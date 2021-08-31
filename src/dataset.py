@@ -88,9 +88,7 @@ class BaseLineDataset(Dataset):
         last_index = index + self.window_size - 1
         item = {"attack": self.attacks[last_index]} if self.is_attacked else {}
         item["timestamp"] = self.timestamps[index + self.window_size - 1]
-        # item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
-        # item["labels"] = torch.from_numpy(self.data_frame[last_index])
-        item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
-        item["labels"] = torch.from_numpy(self.data_frame[index:index + self.window_size])
+        item["inputs"] = torch.from_numpy(self.data_frame[index:index + self.window_size - 1])
+        item["labels"] = torch.from_numpy(self.data_frame[last_index])
 
         return item

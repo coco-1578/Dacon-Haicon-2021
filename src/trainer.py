@@ -125,7 +125,7 @@ class Trainer:
 
         labels = put_labels(anomaly_score, self.CFG.THRESHOLD)
 
-        submission = pd.read_csv('sample_submission.csv')
+        submission = pd.read_csv('/home/salmon21/coco/Competition/HAICON2021/sample_submission.csv')
         submission.index = submission['timestamp']
         submission.loc[timestamps, 'attack'] = labels
 
