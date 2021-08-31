@@ -4,7 +4,7 @@ class CFG:
     LR = 1e-3
     BETAS = (0.9, 0.999)
     DECAY = 0.0001
-    BATCH_SIZE = 2048 
+    BATCH_SIZE = 2048
     MAX_EPOCHS = 64
     WINDOW_SIZE = 60
     WINDOW_GIVEN_LIST = [39, 44, 49, 54, 59, 64, 69, 74, 79]
@@ -16,6 +16,10 @@ class CFG:
     BIDIRECTIONAL = True
     DROPOUT = 0.1
     THRESHOLD = 0.04
+    THRESHOLD_RANGE = [
+        0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035,
+        0.036, 0.037, 0.038, 0.039, 0.04
+    ]
     # STEPS = 1000
 
     # PYTORCH
