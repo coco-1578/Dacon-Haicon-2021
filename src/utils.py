@@ -113,6 +113,31 @@ class EarlyStopping:
             self.counter = 0
 
 
+def range_check(series, size):
+
+    size = size
+    data = []
+
+    for i in range(len(series) - size + 1):
+        if i == 0:
+            check_std = np.std(series[i:i + size])
+        std = np.std(series[i:i + size])
+        mean = np.mean(series[i:i + size])
+        maxs = np.max(series[i:i + size])
+        if check_std * 2 >= std:
+            check_std = std
+            data.append(mean)
+        elif maxs == series[i]:
+            data.append(maxs * 5)
+            check_std = std
+        else:
+            data.append(series[i] * 3)
+    for _ in range(size - 1):
+        data.append(mean)
+
+    return np.array(data)
+
+
 # 2020 HACION
 def Cross_put_labels(Inverse1, Inverse2, Inverse3, Inverse4, Inverse5, Inverse6, Inverse7, Inverse8, Inverse9):
     xs = np.zeros_like(Inverse1)

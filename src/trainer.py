@@ -110,14 +110,23 @@ class Trainer:
                 best['tap'] = tapr['TaP']
                 best['tar'] = tapr['TaR']
                 best['threshold'] = threshold
+
         print(
-            f"Threshold: {best['threshold']}, F1: {best['taf1']:.3f} (TaP: {best['TaP']:.3f}, TaR: {best['TaR']:.3f})")
+            f"Threshold: {best['threshold']}, F1: {best['taf1']:.3f} (TaP: {best['tap']:.3f}, TaR: {best['tar']:.3f})")
+        c_anomaly_score = range_check(anomaly_score, 60)
+        labels = put_labels(c_anomaly_score, CFG.THRESHOLD)
+        attack_labels = put_labels(np.array(valid_dataframe["attack"]), 0.5)
+        final_labels = fill_blank(timestamp, labels, np.array(valid_dataframe["timestamp"]))
+        tapr = etapr.evaluate_haicon(anomalies=attack_labels, predictions=final_labels)
+        print(f"F1: {tapr['f1']:.3f} (TaP: {tapr['TaP']:.3f}, TaR: {tapr['TaR']:.3f})")
+
         # print(f"# of detected anomalies: {len(tapr['Detected_Anomalies'])}")
         # print(f"Detected anomalies: {tapr['Detected_Anomalies']}")
 
         save_weight(f"result/{self.window_size}_{CFG.NUM_LAYERS}_{CFG.HIDDEN_SIZE}.pth", best)
-        check_graph(anomaly_score,
+        check_graph(c_anomaly_score,
                     attacks,
+                    piece=5,
                     threshold=best['threshold'],
                     path=f"result/{self.window_size}_{CFG.NUM_LAYERS}_{CFG.HIDDEN_SIZE}.png")
 
@@ -132,8 +141,8 @@ class Trainer:
 
         timestamps, distance, attacks = self._predict(test_loader)
         anomaly_score = np.mean(distance, axis=1)
-
-        labels = put_labels(anomaly_score, state_dict['threshold'])
+        c_anomaly_score = range_check(anomaly_score, 60)
+        labels = put_labels(c_anomaly_score, state_dict['threshold'])
 
         submission = pd.read_csv('/home/salmon21/coco/Competition/HAICON2021/sample_submission.csv')
         submission.index = submission['timestamp']
