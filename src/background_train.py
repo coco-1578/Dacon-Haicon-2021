@@ -98,7 +98,7 @@ class HaiconDataset(Dataset):
         self.ts = np.array(timestamps)
         self.tag_values = np.array(df, dtype=np.float32)
         self.valid_idxs = []
-        for L in range(len(self.ts) - WINDOW_SIZE + 1):
+        for L in tqdm.trange(len(self.ts) - WINDOW_SIZE + 1):
             R = L + WINDOW_SIZE - 1
             if dateutil.parser.parse(self.ts[R]) - dateutil.parser.parse(self.ts[L]) == timedelta(seconds=WINDOW_SIZE -
                                                                                                   1):
