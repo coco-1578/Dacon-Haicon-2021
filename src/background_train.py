@@ -158,7 +158,7 @@ class CategoricalStackedGRU(nn.Module):
         x = x.transpose(0, 1)
         self.gru.flatten_parameters()
         xs, _ = self.gru(x)
-        out = self.sigmoid(self.linear[xs[-1]])
+        out = self.sigmoid(self.linear(xs[-1]))
         return x[0] + out
 
 
