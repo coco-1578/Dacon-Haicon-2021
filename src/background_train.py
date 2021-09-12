@@ -453,8 +453,8 @@ for epoch in progress_bar:
         sequantial_guess = SEQUANTIAL_MODEL(sequantial_given, sequantial_given)
         categorical_guess = CATEGORICAL_MODEL(categorical_given)
 
-        sequantial_loss = SEQUANTIAL_LOSS(sequantial_answer, sequantial_given)
-        categorical_loss = CATEGORICAL_LOSS(categorical_answer, categorical_given)
+        sequantial_loss = SEQUANTIAL_LOSS(sequantial_answer, sequantial_guess)
+        categorical_loss = CATEGORICAL_LOSS(categorical_answer, categorical_guess)
 
         loss = sequantial_loss + categorical_loss
         loss.backward()
