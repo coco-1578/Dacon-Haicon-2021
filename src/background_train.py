@@ -75,12 +75,20 @@ TRAIN_DF_RAW = dataframe_from_csvs(TRAIN_PATH)
 VALID_DF_RAW = dataframe_from_csvs(VALID_PATH)
 TEST_DF_RAW = dataframe_from_csvs(TEST_PATH)
 
+
 ##### Normalize Dataframe
-scaler = MinMaxScaler()
-columns = TRAIN_DF_RAW.columns.drop([TIMESTAMP_FIELD])
-TRAIN_DF = scaler.fit_transform(TRAIN_DF_RAW[columns])
-VALID_DF = scaler.transform(VALID_DF_RAW[columns])
-TEST_DF = scaler.transform(TEST_DF_RAW[columns])
+def normalize(datasets):
+    scaler = MinMaxScaler()
+    train, valid, test = datasets
+    columns = train.columns.drop([TIMESTAMP_FIELD])
+    train[columns] = scaler.fit_transform(train[columns])
+    valid[columns] = scaler.transform(valid[columns])
+    test[columns] = scaler.transform(test[columns])
+
+    return train[columns], valid[columns], test[columns]
+
+
+TRAIN_DF, VALID_DF, TEST_DF = normalize([TRAIN_DF_RAW, VALID_DF_RAW, TEST_DF_RAW])
 
 
 ##### Define Dataset Class
